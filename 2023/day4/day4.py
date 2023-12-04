@@ -9,7 +9,6 @@ for i, line in enumerate(content.split("\n")):
     overlap = [x for x in draws if x in winning]
     for j in range(count_each_card[i]):
         for k in range(i+1, i+len(overlap)+1):
-            #print(i, j, k)
             count_each_card[k] += 1
     score = 0
     if overlap:
