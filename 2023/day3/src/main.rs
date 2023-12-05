@@ -1,10 +1,17 @@
 use std::io::{BufRead, BufReader};
 use std::fs::File;
-
+use std::collections::HashMap;
+use std::sync::Arc;
 
 fn main() {
     part1();
     //part2();
+}
+
+
+fn part2(){
+
+
 }
 
 
@@ -13,6 +20,7 @@ fn part1() {
     let file = BufReader::new(file);
     let mut sum: i32 = 0;
     let mut line_index: i32 = 0;
+    let mut gears: Arc<HashMap<(i32, i32), Vec<i32>>> = Arc::new(HashMap::new());
     for line in file.lines().filter_map(|result| result.ok()) {
         //println!("{}", line_index);
         let mut char_index: i32 = 0;
@@ -26,11 +34,11 @@ fn part1() {
                 digits.push(c);
                 in_num_flip = true;
                 num_start_index = char_index;
-                println!("Found first digit {digits}");
+                //println!("Found first digit {digits}");
             } else if in_num_flip && c.is_digit(10) && char_index < 139{
                 // Still in number
                 digits.push(c);
-                println!("Found first digit {digits}");
+                //println!("Found first digit {digits}");
             } else if in_num_flip && (!c.is_digit(10) || char_index == 139) {
                 if char_index == 139 && c.is_digit(10){
                     digits.push(c);
@@ -38,14 +46,14 @@ fn part1() {
                 // Number is finished
                 let num_stop_index = char_index - 1;
                 let current_num: i32 = digits.parse::<i32>().unwrap();
-                println!("Came to last digit of {current_num}");
+                //println!("Came to last digit of {current_num}");
                 //println!("{current_num}");
-                if special_is_around(num_start_index, num_stop_index, line_index) {
-                    println!("{current_num}");
+                if special_is_around(num_start_index, num_stop_index, line_index, current_num, gears) {
+                    //println!("{current_num}");
                     sum += current_num;
-                    println!{"Found special around {num_start_index}, {line_index} adding {current_num} to {sum}"}
+                    //println!{"Found special around {num_start_index}, {line_index} adding {current_num} to {sum}"}
                 } else {
-                    println!{"Found no around {num_start_index}, {line_index} not adding {current_num} to {sum}"}
+                    //println!{"Found no around {num_start_index}, {line_index} not adding {current_num} to {sum}"}
                 }
                 
                 digits = "".to_string();
@@ -59,27 +67,33 @@ fn part1() {
         }
         line_index += 1; 
     }
-    println!("{sum}")
+    println!("{sum}");
+
+    println!{"gears"};
 }
 
-fn special_is_around(num_start_index: i32, num_stop_index: i32, line_index: i32) -> bool{
+fn special_is_around(num_start_index: i32, 
+    num_stop_index: i32, 
+    line_index: i32, 
+    current_num: i32, 
+    gears:HashMap<(i32, i32), Vec<i32>>) -> bool{
     //println!("{num_start_index}, {num_stop_index}, {line_index}");
     // look above
     if line_index > 0 {
         // Diagonal left
         if num_start_index > 0 {
-            if check_pos(line_index-1, num_start_index-1){
+            if check_pos(line_index-1, num_start_index-1, current_num, gears){
                 return true;
             }
         }
         for i in num_start_index..num_stop_index+1{
-            if check_pos(line_index-1, i) {
+            if check_pos(line_index-1, i, current_num, gears) {
                 return true;
             }
         }
         // Diagonal right
         if num_stop_index < 139 { //Change for large input
-            if check_pos(line_index-1, num_stop_index+1){
+            if check_pos(line_index-1, num_stop_index+1, current_num, gears){
                 return true;
             }
         }
@@ -88,13 +102,13 @@ fn special_is_around(num_start_index: i32, num_stop_index: i32, line_index: i32)
     // look on sides
     // left
     if num_start_index > 0 {
-        if check_pos(line_index, num_start_index-1){
+        if check_pos(line_index, num_start_index-1, current_num, gears){
             return true;
         }
     }
     // right
     if num_stop_index < 139 { //Change for large input
-        if check_pos(line_index, num_stop_index+1){
+        if check_pos(line_index, num_stop_index+1, current_num, gears){
             return true;
         }
     }
@@ -103,18 +117,18 @@ fn special_is_around(num_start_index: i32, num_stop_index: i32, line_index: i32)
     if line_index < 139 {  // Change for large input
        // Diagonal left
        if num_start_index > 0 {
-        if check_pos(line_index+1, num_start_index-1){
+        if check_pos(line_index+1, num_start_index-1, current_num, gears){
             return true;
         }
     }
     for i in num_start_index..num_stop_index+1{
-        if check_pos(line_index+1, i) {
+        if check_pos(line_index+1, i, current_num, gears) {
             return true;
         }
     }
     // Diagonal right
     if num_stop_index < 139 { //Change for large input
-        if check_pos(line_index+1, num_stop_index+1){
+        if check_pos(line_index+1, num_stop_index+1, current_num, gears){
             return true;
         }
     }
@@ -123,7 +137,10 @@ fn special_is_around(num_start_index: i32, num_stop_index: i32, line_index: i32)
     return false;
 }
 
-fn check_pos(line_ind: i32, char_ind: i32) -> bool {
+fn check_pos(line_ind: i32,
+    char_ind: i32,
+    current_num: i32,
+    gears:HashMap<(i32, i32), Vec<i32>>) -> bool {
     let file = File::open("input.txt").expect("cannot open file");
     let file = BufReader::new(file);
     let mut line_index_check: i32 = 0;
@@ -146,6 +163,10 @@ fn check_pos(line_ind: i32, char_ind: i32) -> bool {
     //println!("Looking at {c}");
     if !c.is_digit(10) && c != '.' {
         //println!("Found '{c}' special char");
+        if c == '*'{
+            println!("{line_ind}, {char_ind}, {current_num}");
+            //gears.entry((line_ind, char_ind)).or_default().push(current_num);
+        }
         return true;
     } else {
         //print!("{c}");
